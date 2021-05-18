@@ -1,0 +1,2098 @@
+/*SurvivalMode class
+ * Author: William Mucha
+ * Class Created: 12/26/2016
+ * Class Last Updated:
+ * Purpose of Class: to run all the necessary code to run the survvial mode portion of the game
+ * Import used in the SurvivalMode class*/
+import java.awt.Graphics;
+import java.awt.Color;
+import java.io.IOException;
+import java.awt.Image;
+import java.io.File;
+import java.awt.image.BufferedImage;
+import javax.imageio.ImageIO;
+import java.util.Random;
+import java.awt.event.MouseEvent;
+import java.awt.event.MouseListener;
+import java.awt.Font;  
+//SurvivalMode class which is a child class to the Lobbies class and that also implements the MouseListener interface
+public class SurvivalMode extends Lobbies implements MouseListener{
+//Variables
+  Image background;
+  Image pause;
+  Image paused;
+  Image continued;
+  Image restart;
+  Image quit;
+  Image gameover;
+  Image playagain;
+  Image survivalMode;
+  Image enterName;
+  Image start;
+  
+  Spaceship spaceship = new Spaceship();
+  int spaceshipY=spaceship.getY1();
+  int spaceshipY2=spaceship.getY2();
+  int spaceshipX=spaceship.getX1();
+  int spaceshipX2=spaceship.getX2();
+  
+  BufferedImage[] slow = {Spaceship.getSprite(0, 0),Spaceship.getSprite(0, 1)};
+  BufferedImage[] fast = {Spaceship.getSprite(0, 0),Spaceship.getSprite(0, 1)};
+  BufferedImage[] dead = {Spaceship.getSprite(0, 2)};
+  Animation slowAnim = new Animation(slow, 40);
+  Animation fastAnim = new Animation(fast, 6);
+  Animation deadAnim = new Animation(dead, 1);
+  Animation animation = slowAnim;   
+  
+  BufferedImage[] alienAlive = {Alien.getSprite(0, 0),Alien.getSprite(0, 1)};
+  BufferedImage[] alienDone = {Alien.getSprite(0, 2)};
+  Animation alienMove = new Animation(alienAlive,20);
+  Animation alienDead = new Animation(alienDone,1);
+  Animation alienAnim[] = new Animation[3];
+  Alien alien[] = new Alien[3];
+  
+  BufferedImage[] gravityMoveUP = {GravityUp.getSprite(0, 0),GravityUp.getSprite(0, 1),GravityUp.getSprite(0, 2)};
+  Animation gravityUP = new Animation(gravityMoveUP,20);
+  Animation gravityUp = gravityUP;
+  GravityUp gravityU[] = new GravityUp[2];
+  
+  BufferedImage[] gravityMoveDOWN = {GravityDown.getSprite(0, 0),GravityDown.getSprite(0, 1),GravityDown.getSprite(0, 2)};
+  Animation gravityDOWN = new Animation(gravityMoveDOWN,20);
+  Animation gravityDown = gravityDOWN;
+  GravityDown gravityD[] = new GravityDown[2];
+  
+  AsteroidSmall small[] = new AsteroidSmall[10];
+  AsteroidMed med[] = new AsteroidMed[5];
+  AsteroidLarge large[] = new AsteroidLarge[3];
+  AsteroidHuge huge[] = new AsteroidHuge[2];
+  
+  TextFile text = new TextFile();
+  
+  boolean fillArr = true;
+  int wave=-1;
+  Random rn = new Random();
+  int score=0;
+  String playerName = KeyPressing.name;
+  int scoreX=470;
+  int scoreY=750;
+  boolean once = true;
+  
+  boolean gamePause=false;
+  boolean gameOver=false;
+  boolean returnMenu=false;
+  
+//Constructor
+  public SurvivalMode() {
+    Thread animationThread = new Thread(new Runnable() {
+      public void run() {
+        while(fillArr){
+          for(int i=0;i<small.length;i++){
+            int asx = 1400; 
+            int asy = (i*76);
+            small[i] = new AsteroidSmall(asx,asy);
+          }
+          for(int i=0;i<med.length;i++){
+            int asx = 1400; 
+            int asy = (i*159);
+            med[i] = new AsteroidMed(asx,asy);
+          }
+          for(int i=0;i<large.length;i++){
+            int asx = 1400; 
+            int asy = (i*140);
+            large[i] = new AsteroidLarge(asx,asy);
+          }
+          for(int i=0;i<huge.length;i++){
+            int asx = 1400; 
+            int asy = (i*100);
+            huge[i] = new AsteroidHuge(asx,asy);
+          }
+          for(int i=0;i<alien.length;i++){
+            int alx = 1400;
+            int aly = 100+(i*200);
+            alien[i] = new Alien(alx,aly);
+            alienAnim[i] = alienMove;
+          }
+          for(int i=0;i<gravityD.length;i++){
+            int gdx = 1400+(i*800);
+            int gdy = 0;
+            gravityD[i] = new GravityDown(gdx,gdy);
+          }
+          for(int i=0;i<gravityU.length;i++){
+            int gux = 1400+(i*800);
+            int guy = 0;
+            gravityU[i] = new GravityUp(gux,guy);
+          }
+          fillArr=false;
+        }
+        while(true){
+          boolean up = KeyPressing.goingUp;
+          boolean down = KeyPressing.goingDown;
+          if(spaceship.canMove()){
+            if(up && spaceshipY>=0){ 
+              spaceshipY-=5;
+              spaceshipY2=(spaceshipY+80);
+              animation = fastAnim;
+            }else if(down && spaceshipY2<=760){ 
+              spaceshipY+=5;
+              spaceshipY2=(spaceshipY+80);
+              animation = fastAnim;
+            } else{
+              animation = slowAnim;
+            }
+          }
+          for(int i=0;i<small.length;i++){
+            if(small[i].getX1()<=spaceshipX2 && small[i].getX2()>= spaceshipX && small[i].getY1()<=spaceshipY2 && small[i].getY2()>= spaceshipY){
+              gameOver = true;
+              animation = deadAnim;
+              spaceship.getMove(false);   
+            } 
+          }
+          for(int i=0;i<med.length;i++){
+            if(med[i].getX1()<=spaceshipX2 && med[i].getX2()>= spaceshipX && med[i].getY1()<=spaceshipY2 && med[i].getY2()>= spaceshipY){
+              gameOver = true;
+              animation = deadAnim;
+              spaceship.getMove(false);
+            } 
+          }
+          for(int i=0;i<large.length;i++){
+            if(large[i].getX1()<=spaceshipX2 && large[i].getX2()>= spaceshipX && large[i].getY1()<=spaceshipY2 && large[i].getY2()>= spaceshipY){
+              gameOver = true;
+              animation = deadAnim;
+              spaceship.getMove(false);
+            } 
+          }
+          for(int i=0;i<huge.length;i++){
+            if(huge[i].getX1()<=spaceshipX2 && huge[i].getX2()>= spaceshipX && huge[i].getY1()<=spaceshipY2 && huge[i].getY2()>= spaceshipY){
+              gameOver = true;
+              animation = deadAnim;
+              spaceship.getMove(false);
+            } 
+          }
+          for(int i=0;i<alien.length;i++){
+            if(alien[i].getX1()<=spaceshipX2 && alien[i].getX1()+5>= spaceshipX2 && alien[i].getY1()<=spaceshipY2 && alien[i].getY2()>= spaceshipY){
+              gameOver = true;
+              animation = deadAnim;
+              spaceship.getMove(false);    
+            } 
+            if(alien[i].getX1()+5<=spaceshipX2 && alien[i].getX2()>= spaceshipX && alien[i].getY1()<=spaceshipY2 && alien[i].getY2()>= spaceshipY){
+              alienAnim[i] = alienDead;
+            }
+          }
+          for(int i=0;i<gravityD.length;i++){
+            if(gravityD[i].getX1()<=spaceshipX2 && gravityD[i].getX2()>= spaceshipX && gravityD[i].getY1()<=spaceshipY2 && gravityD[i].getY2()>= spaceshipY && spaceshipY2<=760 && gamePause==false && gameOver==false){
+              spaceshipY+=4;
+              spaceshipY2=(spaceshipY+80);
+            } 
+          }
+          for(int i=0;i<gravityU.length;i++){
+            if(gravityU[i].getX1()<=spaceshipX2 && gravityU[i].getX2()>= spaceshipX && gravityU[i].getY1()<=spaceshipY2 && gravityU[i].getY2()>= spaceshipY && spaceshipY>=0 && gamePause==false && gameOver==false){
+              spaceshipY-=4;
+              spaceshipY2=(spaceshipY+80);
+            } 
+          }
+          if(wave==0){
+            wave = rn.nextInt(25) + 1;
+          }
+          if(wave==-1){
+             playerName = KeyPressing.name;
+          }
+          repaint();
+          try {Thread.sleep(10);} catch (Exception ex) { System.exit(0);}
+        }
+      }
+    });   
+    animationThread.start();
+  }
+//Methods
+  public void mouseClicked(MouseEvent e) {
+    int x=e.getX();
+    int y=e.getY();
+    if(wave==-1){
+      if(playerName.length()>0){
+        if(x >= (WIDTH/2)-(255/2) && x<= (WIDTH/2)+(255/2) && y>= (HEIGHT-100) && y<= (HEIGHT-21)){
+          wave=0;
+          spaceship.getMove(true);
+        }
+      }
+    }
+    if(wave!=-1){
+      if(x >= (WIDTH-261) && x<= WIDTH && y>= 0 && y<= 78 && gameOver!=true){
+        gamePause = true;
+        spaceship.getMove(false);
+        repaint();
+        x=0;
+        y=0;
+      }
+      if(gamePause){
+        if(x >= ((WIDTH/2)-(371/2)) && x<= ((WIDTH/2)+(371/2)) && y>= 300 && y<= 378){
+          gamePause = false;
+          spaceship.getMove(true);
+          repaint();
+          x=0;
+          y=0;
+        }
+        if(x >= ((WIDTH/2)-(319/2)) && x<= ((WIDTH/2)+(319/2)) && y>= 400 && y<= 472){
+          gamePause = false;
+          spaceship.getMove(true);
+          wave=-1;
+          KeyPressing.name = "";
+          spaceshipX=spaceship.getX1();
+          spaceshipX2=spaceship.getX2();
+          spaceshipY=spaceship.getY1();
+          spaceshipY2=spaceship.getY2();
+          for(int i=0;i<small.length;i++){
+            small[i].setX(1400);
+          }
+          for(int i=0;i<med.length;i++){
+            med[i].setX(1400);
+          }
+          for(int i=0;i<large.length;i++){
+            large[i].setX(1400);
+          }
+          for(int i=0;i<huge.length;i++){
+            huge[i].setX(1400);
+          }
+          for(int i=0;i<alien.length;i++){
+            alien[i].setX(1400);
+            alienAnim[i] = alienMove;
+          }   
+          gravityU[0].setX(1400);
+          gravityU[1].setX(2200);
+          gravityD[0].setX(1400);
+          gravityD[1].setX(2200);
+          score=0;
+          repaint();
+          x=0;
+          y=0;
+        }
+        if(x >= ((WIDTH/2)-(168/2)) && x<= ((WIDTH/2)+(168/2)) && y>= 500 && y<= 576){
+          KeyPressing.name = "";
+          returnMenu = true;
+        }
+      }
+      if(gameOver){
+        if(x >= ((WIDTH/2)-(485/2)) && x<= ((WIDTH/2)+(485/2)) && y>= 400 && y<= 479){
+          gameOver = false;
+          once = true;
+          KeyPressing.name = "";
+          spaceship.getMove(true);
+          wave=-1;
+          KeyPressing.name = "";
+          spaceshipX=spaceship.getX1();
+          spaceshipX2=spaceship.getX2();
+          spaceshipY=spaceship.getY1();
+          spaceshipY2=spaceship.getY2();
+          for(int i=0;i<small.length;i++){
+            small[i].setX(1400);
+          }
+          for(int i=0;i<med.length;i++){
+            med[i].setX(1400);
+          }
+          for(int i=0;i<large.length;i++){
+            large[i].setX(1400);
+          }
+          for(int i=0;i<huge.length;i++){
+            huge[i].setX(1400);
+          }
+          for(int i=0;i<alien.length;i++){
+            alien[i].setX(1400);
+            alienAnim[i] = alienMove;
+          }   
+          gravityU[0].setX(1400);
+          gravityU[1].setX(2200);
+          gravityD[0].setX(1400);
+          gravityD[1].setX(2200);
+          score=0;
+          repaint();
+          x=0;
+          y=0;
+        }
+        if(x >= ((WIDTH/2)-(168/2)) && x<= ((WIDTH/2)+(168/2)) && y>= 500 && y<= 576){
+          KeyPressing.name = "";
+          returnMenu = true;
+        }
+      }
+    }
+  }
+  public void mousePressed(MouseEvent e) {}
+  public void mouseEntered(MouseEvent e) {}
+  public void mouseExited(MouseEvent e) {}
+  public void mouseReleased(MouseEvent e) {}
+  
+  public boolean backToMenu(){return returnMenu;}
+  /*getImages method
+   * Postcondition: all Image variables have assigned png or gif file saved into them
+   *Purpose: to get the image used in the MainMenu class and save it*/
+  public void getImages(){
+    BufferedImage img = null;
+    try {
+      img = ImageIO.read(new File("survivalbg.png"));
+    } catch (IOException e) {}
+    background = img;
+    BufferedImage img1 = null;
+    try {
+      img1 = ImageIO.read(new File("pause.png"));
+    } catch (IOException e) {}
+    pause = img1;
+    BufferedImage img2 = null;
+    try {
+      img2 = ImageIO.read(new File("paused.png"));
+    } catch (IOException e) {}
+    paused = img2;
+    BufferedImage img3 = null;
+    try {
+      img3 = ImageIO.read(new File("continue.png"));
+    } catch (IOException e) {}
+    continued = img3;
+    BufferedImage img4 = null;
+    try {
+      img4 = ImageIO.read(new File("restart.png"));
+    } catch (IOException e) {}
+    restart = img4;
+    BufferedImage img5 = null;
+    try {
+      img5 = ImageIO.read(new File("quit.png"));
+    } catch (IOException e) {}
+    quit = img5;
+    BufferedImage img6 = null;
+    try {
+      img6 = ImageIO.read(new File("game-over.png"));
+    } catch (IOException e) {}
+    gameover = img6;
+    BufferedImage img7 = null;
+    try {
+      img7 = ImageIO.read(new File("play-again.png"));
+    } catch (IOException e) {}
+    playagain = img7;
+    BufferedImage img8 = null;
+    try {
+      img8 = ImageIO.read(new File("Survival-Mode.png"));
+    } catch (IOException e) {}
+    survivalMode = img8;
+    BufferedImage img9 = null;
+    try {
+      img9 = ImageIO.read(new File("Please-enter-your-name.png"));
+    } catch (IOException e) {}
+    enterName = img9;
+    BufferedImage img10 = null;
+    try {
+      img10 = ImageIO.read(new File("start2.png"));
+    } catch (IOException e) {}
+    start = img10;
+    for(int i=0;i<small.length;i++){
+      small[i].getAsteroid();
+    }
+    for(int i=0;i<med.length;i++){
+      med[i].getAsteroid();
+    }
+    for(int i=0;i<large.length;i++){
+      large[i].getAsteroid();
+    }
+    for(int i=0;i<huge.length;i++){
+      huge[i].getAsteroid();
+    }
+  };  
+  public void paintComponent(Graphics g){
+    if(wave==-1){
+      int width = getWidth();
+      int height = getHeight();
+      super.paintComponent(g);
+      g.drawImage(background, 0,0,null);
+      g.drawImage(survivalMode, (width/2)-(845/2),20,null);
+      g.drawImage(enterName, (width/2)-(868/2),200,null);
+      g.drawImage(start, (width/2)-(255/2),height-100,null);
+      spaceship.getMove(false);
+      g.setFont(new Font("Tahoma", Font.BOLD, 50));
+      g.setColor(Color.WHITE);
+      g.drawString("Start typing to see your name, max of 16 letters",100,350);
+      g.setColor(Color.RED);
+      g.drawString(playerName,450,450);
+      g.setColor(Color.WHITE);
+      g.drawString("Click Start when you are ready",300,550);
+      g.drawString("Leaving Name blank won't let you start",200,650);
+    }  
+    if(wave==0){
+      int width = getWidth();
+      int height = getHeight();
+      super.paintComponent(g);
+      g.drawImage(background, 0,0,null);
+      animation.start();
+      g.drawImage(animation.getSprite(), spaceshipX, spaceshipY, null);
+      animation.update();
+      g.setFont(new Font("Tahoma", Font.BOLD, 50));
+      g.setColor(Color.WHITE);
+      g.drawString("Waves Completed: "+ Integer.toString(score),scoreX,scoreY);
+      if(gamePause){
+        g.drawImage(paused, (width/2)-(472/2), height/2-300, null);
+        g.drawImage(continued, (width/2)-(371/2), 300, null);
+        g.drawImage(restart, (width/2)-(319/2), 400, null);
+        g.drawImage(quit, (width/2)-(168/2), 500, null);
+      } else {
+        if(gameOver==false){
+          g.drawImage(pause, width-261, 0, null);
+        }
+      }
+      if(gameOver){
+        g.drawImage(gameover, (width/2)-(697/2), 200, null);
+        g.drawImage(playagain, (width/2)-(487/2), 400, null);
+        g.drawImage(quit, (width/2)-(168/2), 500, null);
+        if(once){
+          text.getHighscore(playerName,score);
+          once = false;
+        }
+      }
+    }//end of Wave 0
+    if(wave==1){
+      int width = getWidth();
+      int height = getHeight();
+      super.paintComponent(g);
+      g.drawImage(background, 0,0,null);
+      g.drawImage(huge[1].getPic(), huge[1].getX1(), huge[1].getY1(), null);
+      if(gamePause==false && gameOver==false){
+        huge[1].changeX();
+      }
+      if(huge[1].getX1()<200){
+        g.drawImage(small[0].getPic(), small[0].getX1(), small[0].getY1(), null);
+        g.drawImage(small[1].getPic(), small[1].getX1(), small[1].getY1(), null);
+        g.drawImage(small[2].getPic(), small[2].getX1(), small[2].getY1(), null);
+        if(gamePause==false && gameOver==false){
+          small[0].changeX();
+          small[1].changeX();
+          small[2].changeX();
+        }
+      }
+      animation.start();
+      g.drawImage(animation.getSprite(), spaceshipX, spaceshipY, null);
+      animation.update();     
+      g.setFont(new Font("Tahoma", Font.BOLD, 50));
+      g.setColor(Color.WHITE);
+      g.drawString("Waves Completed: "+ Integer.toString(score),scoreX,scoreY);
+      if(small[1].getX2()<0){       
+        wave=0;
+        huge[1].setX(1400);
+        small[0].setX(1400);
+        small[1].setX(1400);
+        small[2].setX(1400);
+        score++;
+      }
+      if(gamePause){
+        g.drawImage(paused, (width/2)-(472/2), height/2-300, null);
+        g.drawImage(continued, (width/2)-(371/2), 300, null);
+        g.drawImage(restart, (width/2)-(319/2), 400, null);
+        g.drawImage(quit, (width/2)-(168/2), 500, null);
+      } else {
+        if(gameOver==false){
+          g.drawImage(pause, width-261, 0, null);
+        }
+      }
+      if(gameOver){
+        g.drawImage(gameover, (width/2)-(697/2), 200, null);
+        g.drawImage(playagain, (width/2)-(487/2), 400, null);
+        g.drawImage(quit, (width/2)-(168/2), 500, null);
+        if(once){
+          text.getHighscore(playerName,score);
+          once = false;
+        }
+      }
+    }//end of Wave 1
+    if(wave==2){
+      int width = getWidth();
+      int height = getHeight();
+      super.paintComponent(g);
+      g.drawImage(background, 0,0,null);
+      g.drawImage(large[1].getPic(), large[1].getX1(), large[1].getY1(), null);
+      if(gamePause==false && gameOver==false){
+        large[1].changeX();
+      }
+      if(large[1].getX1()<300){
+        g.drawImage(med[2].getPic(), med[2].getX1(), med[2].getY1(), null);
+        if(gamePause==false && gameOver==false){
+          med[2].changeX();
+        }
+      }
+      animation.start();
+      g.drawImage(animation.getSprite(), spaceshipX, spaceshipY, null);
+      animation.update();
+      g.setFont(new Font("Tahoma", Font.BOLD, 50));
+      g.setColor(Color.WHITE);
+      g.drawString("Waves Completed: "+ Integer.toString(score),scoreX,scoreY);
+      if(med[2].getX2()<0){
+        wave=0;
+        large[1].setX(1400);
+        med[2].setX(1400);
+        score++;
+      }
+      if(gamePause){
+        g.drawImage(paused, (width/2)-(472/2), height/2-300, null);
+        g.drawImage(continued, (width/2)-(371/2), 300, null);
+        g.drawImage(restart, (width/2)-(319/2), 400, null);
+        g.drawImage(quit, (width/2)-(168/2), 500, null);
+      } else {
+        if(gameOver==false){
+          g.drawImage(pause, width-261, 0, null);
+        }
+      }
+      if(gameOver){
+        g.drawImage(gameover, (width/2)-(697/2), 200, null);
+        g.drawImage(playagain, (width/2)-(487/2), 400, null);
+        g.drawImage(quit, (width/2)-(168/2), 500, null);
+        if(once){
+          text.getHighscore(playerName,score);
+          once = false;
+        }
+      }
+    }//end of Wave 2
+    if(wave==3){
+      int width = getWidth();
+      int height = getHeight();
+      super.paintComponent(g);
+      g.drawImage(background, 0,0,null);
+      g.drawImage(small[0].getPic(), small[0].getX1(), small[0].getY1(), null);
+      if(gamePause==false && gameOver==false){
+        small[0].changeX();
+      }
+      g.drawImage(small[9].getPic(), small[9].getX1(), small[9].getY1(), null);
+      if(gamePause==false && gameOver==false){
+        small[9].changeX();
+      }
+      if(small[0].getX1()<1200){
+        g.drawImage(small[1].getPic(), small[1].getX1(), small[1].getY1(), null);
+        if(gamePause==false && gameOver==false){
+          small[1].changeX();
+        }
+        g.drawImage(small[8].getPic(), small[8].getX1(), small[8].getY1(), null);
+        if(gamePause==false && gameOver==false){
+          small[8].changeX();
+        }
+        if(small[1].getX1()<1200){
+          g.drawImage(small[2].getPic(), small[2].getX1(), small[2].getY1(), null);
+          if(gamePause==false && gameOver==false){
+            small[2].changeX();
+          }
+          g.drawImage(small[7].getPic(), small[7].getX1(), small[7].getY1(), null);
+          if(gamePause==false && gameOver==false){
+            small[7].changeX();
+          }
+          if(small[2].getX1()<1200){
+            g.drawImage(med[2].getPic(), med[2].getX1(), med[2].getY1(), null);
+            if(gamePause==false && gameOver==false){
+              med[2].changeX();
+            }
+          }
+        }
+      }
+      animation.start();
+      g.drawImage(animation.getSprite(), spaceshipX, spaceshipY, null);
+      animation.update();
+      g.setFont(new Font("Tahoma", Font.BOLD, 50));
+      g.setColor(Color.WHITE);
+      g.drawString("Waves Completed: "+ Integer.toString(score),scoreX,scoreY);
+      if(med[2].getX2()<0){
+        wave=0;
+        small[0].setX(1400);
+        small[1].setX(1400);
+        small[2].setX(1400);
+        small[7].setX(1400);
+        small[8].setX(1400);
+        small[9].setX(1400);
+        med[2].setX(1400);
+        score++;
+      }
+      if(gamePause){
+        g.drawImage(paused, (width/2)-(472/2), height/2-300, null);
+        g.drawImage(continued, (width/2)-(371/2), 300, null);
+        g.drawImage(restart, (width/2)-(319/2), 400, null);
+        g.drawImage(quit, (width/2)-(168/2), 500, null);
+      } else {
+        if(gameOver==false){
+          g.drawImage(pause, width-261, 0, null);
+        }
+      }
+      if(gameOver){
+        g.drawImage(gameover, (width/2)-(697/2), 200, null);
+        g.drawImage(playagain, (width/2)-(487/2), 400, null);
+        g.drawImage(quit, (width/2)-(168/2), 500, null);
+        if(once){
+          text.getHighscore(playerName,score);
+          once = false;
+        }
+      }
+    }//end of Wave 3
+    if(wave==4){
+      int width = getWidth();
+      int height = getHeight();
+      super.paintComponent(g);
+      g.drawImage(background, 0,0,null);
+      alienAnim[1].start();
+      g.drawImage(alienAnim[1].getSprite(), alien[1].getX1(), alien[1].getY1(), null);
+      if(gamePause==false && gameOver==false){
+        alien[1].change();
+      }
+      alienAnim[1].update();
+      animation.start();
+      g.drawImage(animation.getSprite(), spaceshipX, spaceshipY, null);
+      animation.update();
+      g.setFont(new Font("Tahoma", Font.BOLD, 50));
+      g.setColor(Color.WHITE);
+      g.drawString("Waves Completed: "+ Integer.toString(score),scoreX,scoreY);
+      if(alien[1].getX2()<0){
+        wave=0;
+        alien[1].setX(1400);
+        alienAnim[1] = alienMove;
+        score++;
+      }
+      if(gamePause){
+        g.drawImage(paused, (width/2)-(472/2), height/2-300, null);
+        g.drawImage(continued, (width/2)-(371/2), 300, null);
+        g.drawImage(restart, (width/2)-(319/2), 400, null);
+        g.drawImage(quit, (width/2)-(168/2), 500, null);
+      } else {
+        if(gameOver==false){
+          g.drawImage(pause, width-261, 0, null);
+        }
+      }
+      if(gameOver){
+        g.drawImage(gameover, (width/2)-(697/2), 200, null);
+        g.drawImage(playagain, (width/2)-(487/2), 400, null);
+        g.drawImage(quit, (width/2)-(168/2), 500, null);
+        if(once){
+          text.getHighscore(playerName,score);
+          once = false;
+        }
+      }
+    }//end of Wave 4
+    if(wave==5){
+      int width = getWidth();
+      int height = getHeight();
+      super.paintComponent(g);
+      g.drawImage(background, 0,0,null);
+      gravityDown.start();
+      g.drawImage(gravityDown.getSprite(), gravityD[0].getX1(),  gravityD[0].getY1(), null);
+      if(gamePause==false && gameOver==false){
+        gravityD[0].changeX();
+      }
+      g.drawImage(gravityDown.getSprite(), gravityD[1].getX1(),  gravityD[1].getY1(), null);
+      if(gamePause==false && gameOver==false){
+        gravityD[1].changeX();
+      }
+      gravityDown.update();
+      if(gravityD[0].getX1()<1350){
+        g.drawImage(large[2].getPic(), large[2].getX1(), large[2].getY1(), null);
+        if(gamePause==false && gameOver==false){
+          large[2].changeX();
+        }
+      }
+      if(gravityD[1].getX1()<1350){
+        g.drawImage(large[0].getPic(), large[0].getX1(), large[0].getY1(), null);
+        if(gamePause==false && gameOver==false){
+          large[0].changeX();
+        }
+      }
+      animation.start();
+      g.drawImage(animation.getSprite(), spaceshipX, spaceshipY, null);
+      animation.update();
+      g.setFont(new Font("Tahoma", Font.BOLD, 50));
+      g.setColor(Color.WHITE);
+      g.drawString("Waves Completed: "+ Integer.toString(score),scoreX,scoreY);
+      if(gravityD[1].getX2()<0){
+        wave=0;
+        gravityD[0].setX(1400);
+        gravityD[1].setX(2200);
+        large[0].setX(1400);
+        large[2].setX(1400);
+        score++;
+      }
+      if(gamePause){
+        g.drawImage(paused, (width/2)-(472/2), height/2-300, null);
+        g.drawImage(continued, (width/2)-(371/2), 300, null);
+        g.drawImage(restart, (width/2)-(319/2), 400, null);
+        g.drawImage(quit, (width/2)-(168/2), 500, null);
+      } else {
+        if(gameOver==false){
+          g.drawImage(pause, width-261, 0, null);
+        }
+      }
+      if(gameOver){
+        g.drawImage(gameover, (width/2)-(697/2), 200, null);
+        g.drawImage(playagain, (width/2)-(487/2), 400, null);
+        g.drawImage(quit, (width/2)-(168/2), 500, null);
+        if(once){
+          text.getHighscore(playerName,score);
+          once = false;
+        }
+      }
+    }//end of Wave 5
+    if(wave==6){
+      int width = getWidth();
+      int height = getHeight();
+      super.paintComponent(g);
+      g.drawImage(background, 0,0,null);  
+      gravityUp.start();
+      g.drawImage(gravityUp.getSprite(), gravityU[0].getX1(),  gravityU[0].getY1(), null);
+      if(gamePause==false && gameOver==false){
+        gravityU[0].changeX();
+      }
+      g.drawImage(gravityUp.getSprite(), gravityU[1].getX1(),  gravityU[1].getY1(), null);
+      if(gamePause==false && gameOver==false){
+        gravityU[1].changeX();
+      }
+      gravityUp.update();
+      if(gravityU[0].getX1()<1350){
+        g.drawImage(large[0].getPic(), large[0].getX1(), large[0].getY1(), null);
+        if(gamePause==false && gameOver==false){
+          large[0].changeX();
+        }
+      }
+      if(gravityU[1].getX1()<1350){
+        g.drawImage(large[2].getPic(), large[2].getX1(), large[2].getY1(), null);
+        if(gamePause==false && gameOver==false){
+          large[2].changeX();
+        }
+      }
+      animation.start();
+      g.drawImage(animation.getSprite(), spaceshipX, spaceshipY, null);
+      animation.update();
+      g.setFont(new Font("Tahoma", Font.BOLD, 50));
+      g.setColor(Color.WHITE);
+      g.drawString("Waves Completed: "+ Integer.toString(score),scoreX,scoreY);
+      if(gravityU[1].getX2()<0){
+        wave=0;
+        gravityU[0].setX(1400);
+        gravityU[1].setX(2200);
+        large[0].setX(1400);
+        large[2].setX(1400);
+        score++;
+      }
+      if(gamePause){
+        g.drawImage(paused, (width/2)-(472/2), height/2-300, null);
+        g.drawImage(continued, (width/2)-(371/2), 300, null);
+        g.drawImage(restart, (width/2)-(319/2), 400, null);
+        g.drawImage(quit, (width/2)-(168/2), 500, null);
+      } else {
+        if(gameOver==false){
+          g.drawImage(pause, width-261, 0, null);
+        }
+      }
+      if(gameOver){
+        g.drawImage(gameover, (width/2)-(697/2), 200, null);
+        g.drawImage(playagain, (width/2)-(487/2), 400, null);
+        g.drawImage(quit, (width/2)-(168/2), 500, null);
+        if(once){
+          text.getHighscore(playerName,score);
+          once = false;
+        }
+      }
+    }//end of Wave 6
+    if(wave==7){
+      int width = getWidth();
+      int height = getHeight();
+      super.paintComponent(g);
+      g.drawImage(background, 0,0,null);
+      alienAnim[0].start();
+      alienAnim[2].start();
+      g.drawImage(alienAnim[0].getSprite(), alien[0].getX1(), alien[0].getY1(), null);
+      g.drawImage(alienAnim[2].getSprite(), alien[2].getX1(), alien[2].getY1(), null);
+      if(gamePause==false && gameOver==false){
+        alien[0].change();
+        alien[2].change();
+      }
+      alienAnim[0].update();
+      alienAnim[2].update();
+      if(alien[0].getX1()<900){
+        g.drawImage(med[1].getPic(), med[1].getX1(), med[1].getY1(), null);
+        g.drawImage(med[4].getPic(), med[3].getX1(), med[3].getY1(), null);
+        if(gamePause==false && gameOver==false){
+          med[1].changeX();
+          med[3].changeX();
+        }
+      }
+      animation.start();
+      g.drawImage(animation.getSprite(), spaceshipX, spaceshipY, null);
+      animation.update();
+      g.setFont(new Font("Tahoma", Font.BOLD, 50));
+      g.setColor(Color.WHITE);
+      g.drawString("Waves Completed: "+ Integer.toString(score),scoreX,scoreY);
+      if(med[1].getX2()<0){
+        wave=0;
+        alien[0].setX(1400);
+        alienAnim[0] = alienMove;
+        alien[2].setX(1400);
+        alienAnim[2] = alienMove;
+        med[1].setX(1400);
+        med[3].setX(1400);
+        score++;
+      }
+      if(gamePause){
+        g.drawImage(paused, (width/2)-(472/2), height/2-300, null);
+        g.drawImage(continued, (width/2)-(371/2), 300, null);
+        g.drawImage(restart, (width/2)-(319/2), 400, null);
+        g.drawImage(quit, (width/2)-(168/2), 500, null);
+      } else {
+        if(gameOver==false){
+          g.drawImage(pause, width-261, 0, null);
+        }
+      }
+      if(gameOver){
+        g.drawImage(gameover, (width/2)-(697/2), 200, null);
+        g.drawImage(playagain, (width/2)-(487/2), 400, null);
+        g.drawImage(quit, (width/2)-(168/2), 500, null);
+        if(once){
+          text.getHighscore(playerName,score);
+          once = false;
+        }
+      }
+    }//end of Wave 7
+    if(wave==8){
+      int width = getWidth();
+      int height = getHeight();
+      super.paintComponent(g);
+      g.drawImage(background, 0,0,null);
+      gravityUp.start();
+      g.drawImage(gravityUp.getSprite(), gravityU[0].getX1(), gravityU[0].getY1(), null);
+      if(gamePause==false && gameOver==false){
+        gravityU[0].changeX();
+      }
+      gravityDown.start();
+      g.drawImage(gravityDown.getSprite(), gravityD[1].getX1(), gravityD[1].getY1(), null);
+      if(gamePause==false && gameOver==false){
+        gravityD[1].changeX();
+      }
+      gravityUp.update();
+      gravityDown.update();
+      if(gravityU[0].getX1()<1350){
+        g.drawImage(large[0].getPic(), large[0].getX1(), large[0].getY1(), null);
+        if(gamePause==false && gameOver==false){
+          large[0].changeX();
+        }
+      }
+      if(gravityD[1].getX1()<1350){
+        g.drawImage(large[2].getPic(), large[2].getX1(), large[2].getY1(), null);
+        if(gamePause==false && gameOver==false){
+          large[2].changeX();
+        }
+      }
+      animation.start();
+      g.drawImage(animation.getSprite(), spaceshipX, spaceshipY, null);
+      animation.update();
+      g.setFont(new Font("Tahoma", Font.BOLD, 50));
+      g.setColor(Color.WHITE);
+      g.drawString("Waves Completed: "+ Integer.toString(score),scoreX,scoreY);
+      if(gravityD[1].getX2()<0){
+        wave=0;
+        gravityU[0].setX(1400);
+        gravityD[1].setX(2200);
+        large[0].setX(1400);
+        large[2].setX(1400);
+        score++;
+      }
+      if(gamePause){
+        g.drawImage(paused, (width/2)-(472/2), height/2-300, null);
+        g.drawImage(continued, (width/2)-(371/2), 300, null);
+        g.drawImage(restart, (width/2)-(319/2), 400, null);
+        g.drawImage(quit, (width/2)-(168/2), 500, null);
+      } else {
+        if(gameOver==false){
+          g.drawImage(pause, width-261, 0, null);
+        }
+      }
+      if(gameOver){
+        g.drawImage(gameover, (width/2)-(697/2), 200, null);
+        g.drawImage(playagain, (width/2)-(487/2), 400, null);
+        g.drawImage(quit, (width/2)-(168/2), 500, null);
+        if(once){
+          text.getHighscore(playerName,score);
+          once = false;
+        }
+      }
+    }//end of Wave 8
+    if(wave==9){
+      int width = getWidth();
+      int height = getHeight();
+      super.paintComponent(g);
+      g.drawImage(background, 0,0,null);
+      gravityDown.start();
+      g.drawImage(gravityDown.getSprite(), gravityD[0].getX1(), gravityD[0].getY1(), null);
+      if(gamePause==false && gameOver==false){
+        gravityD[0].changeX();
+      }
+      gravityUp.start();
+      g.drawImage(gravityUp.getSprite(), gravityU[1].getX1(), gravityU[1].getY1(), null);
+      if(gamePause==false && gameOver==false){
+        gravityU[1].changeX();
+      }
+      gravityDown.update();
+      gravityUp.update();
+      if(gravityD[0].getX1()<1350){
+        g.drawImage(large[2].getPic(), large[2].getX1(), large[2].getY1(), null);
+        if(gamePause==false && gameOver==false){
+          large[2].changeX();
+        }
+      }
+      if(gravityU[1].getX1()<1350){
+        g.drawImage(large[0].getPic(), large[0].getX1(), large[0].getY1(), null);
+        if(gamePause==false && gameOver==false){
+          large[0].changeX();
+        }
+      }
+      animation.start();
+      g.drawImage(animation.getSprite(), spaceshipX, spaceshipY, null);
+      animation.update();
+      g.setFont(new Font("Tahoma", Font.BOLD, 50));
+      g.setColor(Color.WHITE);
+      g.drawString("Waves Completed: "+ Integer.toString(score),scoreX,scoreY);
+      if(gravityU[1].getX2()<0){
+        wave=0;
+        gravityD[0].setX(1400);
+        gravityU[1].setX(2200);
+        large[0].setX(1400);
+        large[2].setX(1400);
+        score++;
+      }
+      if(gamePause){
+        g.drawImage(paused, (width/2)-(472/2), height/2-300, null);
+        g.drawImage(continued, (width/2)-(371/2), 300, null);
+        g.drawImage(restart, (width/2)-(319/2), 400, null);
+        g.drawImage(quit, (width/2)-(168/2), 500, null);
+      } else {
+        if(gameOver==false){
+          g.drawImage(pause, width-261, 0, null);
+        }
+      }
+      if(gameOver){
+        g.drawImage(gameover, (width/2)-(697/2), 200, null);
+        g.drawImage(playagain, (width/2)-(487/2), 400, null);
+        g.drawImage(quit, (width/2)-(168/2), 500, null);
+        if(once){
+          text.getHighscore(playerName,score);
+          once = false;
+        }
+      }
+    }//end of Wave 9
+    if(wave==10){
+      int width = getWidth();
+      int height = getHeight();
+      super.paintComponent(g);
+      g.drawImage(background, 0,0,null);
+      g.drawImage(large[1].getPic(), large[1].getX1(), large[1].getY1(), null);
+      if(gamePause==false && gameOver==false){
+        large[1].changeX();
+      }
+      if(large[1].getX1()<950){
+        g.drawImage(huge[0].getPic(), huge[0].getX1(), huge[0].getY1(), null);
+        if(gamePause==false && gameOver==false){
+          huge[0].changeX();
+        }
+      }
+      animation.start();
+      g.drawImage(animation.getSprite(), spaceshipX, spaceshipY, null);
+      animation.update();
+      g.setFont(new Font("Tahoma", Font.BOLD, 50));
+      g.setColor(Color.WHITE);
+      g.drawString("Waves Completed: "+ Integer.toString(score),scoreX,scoreY);
+      if(huge[0].getX2()<0){
+        wave=0;
+        large[1].setX(1400);
+        huge[0].setX(1400);
+        score++;
+      }
+      if(gamePause){
+        g.drawImage(paused, (width/2)-(472/2), height/2-300, null);
+        g.drawImage(continued, (width/2)-(371/2), 300, null);
+        g.drawImage(restart, (width/2)-(319/2), 400, null);
+        g.drawImage(quit, (width/2)-(168/2), 500, null);
+      } else {
+        if(gameOver==false){
+          g.drawImage(pause, width-261, 0, null);
+        }
+      }
+      if(gameOver){
+        g.drawImage(gameover, (width/2)-(697/2), 200, null);
+        g.drawImage(playagain, (width/2)-(487/2), 400, null);
+        g.drawImage(quit, (width/2)-(168/2), 500, null);
+        if(once){
+          text.getHighscore(playerName,score);
+          once = false;
+        }
+      }
+    }//end of Wave 10
+    if(wave==11){
+      int width = getWidth();
+      int height = getHeight();
+      super.paintComponent(g);
+      g.drawImage(background, 0,0,null);
+      gravityDown.start();
+      g.drawImage(gravityDown.getSprite(), gravityD[0].getX1(),  gravityD[0].getY1(), null);
+      if(gamePause==false && gameOver==false){
+        gravityD[0].changeX();
+      }
+      g.drawImage(gravityDown.getSprite(), gravityD[1].getX1(),  gravityD[1].getY1(), null);
+      if(gamePause==false && gameOver==false){
+        gravityD[1].changeX();
+      }
+      gravityDown.update();
+      if(gravityD[0].getX1()<1350){
+        g.drawImage(small[8].getPic(), small[8].getX1(), small[8].getY1(), null);
+        if(gamePause==false && gameOver==false){
+          small[8].changeX();
+        }
+      }
+      if(gravityD[0].getX1()<1150){
+        g.drawImage(small[7].getPic(), small[7].getX1(), small[7].getY1(), null);
+        if(gamePause==false && gameOver==false){
+          small[7].changeX();
+        }
+      }
+      if(gravityD[0].getX1()<950){
+        g.drawImage(med[0].getPic(), med[0].getX1(), med[0].getY1(), null);
+        g.drawImage(small[6].getPic(), small[6].getX1(), small[6].getY1(), null);
+        if(gamePause==false && gameOver==false){
+          med[0].changeX();
+          small[6].changeX();
+        }
+      }
+      if(gravityD[1].getX1()<1350){
+        g.drawImage(large[2].getPic(), large[2].getX1(), large[2].getY1(), null);
+        if(gamePause==false && gameOver==false){
+          large[2].changeX();
+        }
+      }
+      animation.start();
+      g.drawImage(animation.getSprite(), spaceshipX, spaceshipY, null);
+      animation.update();
+      g.setFont(new Font("Tahoma", Font.BOLD, 50));
+      g.setColor(Color.WHITE);
+      g.drawString("Waves Completed: "+ Integer.toString(score),scoreX,scoreY);
+      if(gravityD[1].getX2()<0){
+        wave=0;
+        gravityD[0].setX(1400);
+        gravityD[1].setX(2200);
+        small[8].setX(1400);
+        small[7].setX(1400);
+        small[6].setX(1400);
+        large[2].setX(1400);
+        med[0].setX(1400);
+        score++;
+      }
+      if(gamePause){
+        g.drawImage(paused, (width/2)-(472/2), height/2-300, null);
+        g.drawImage(continued, (width/2)-(371/2), 300, null);
+        g.drawImage(restart, (width/2)-(319/2), 400, null);
+        g.drawImage(quit, (width/2)-(168/2), 500, null);
+      } else {
+        if(gameOver==false){
+          g.drawImage(pause, width-261, 0, null);
+        }
+      }
+      if(gameOver){
+        g.drawImage(gameover, (width/2)-(697/2), 200, null);
+        g.drawImage(playagain, (width/2)-(487/2), 400, null);
+        g.drawImage(quit, (width/2)-(168/2), 500, null);
+        if(once){
+          text.getHighscore(playerName,score);
+          once = false;
+        }
+      }
+    }//end of Wave 11
+    if(wave==12){
+      int width = getWidth();
+      int height = getHeight();
+      super.paintComponent(g);
+      g.drawImage(background, 0,0,null);  
+      g.drawImage(small[0].getPic(), small[0].getX1(), small[0].getY1(), null);
+      g.drawImage(small[5].getPic(), small[5].getX1(), small[5].getY1(), null);
+      if(gamePause==false && gameOver==false){
+        small[0].changeX();
+        small[5].changeX();
+      }
+      if(small[0].getX1()<1200){
+        g.drawImage(small[3].getPic(), small[3].getX1(), small[3].getY1(), null);
+        g.drawImage(small[8].getPic(), small[8].getX1(), small[8].getY1(), null);
+        if(gamePause==false && gameOver==false){
+          small[3].changeX();
+          small[8].changeX();
+        }
+        if(small[3].getX1()<1200){
+          g.drawImage(small[1].getPic(), small[1].getX1(), small[1].getY1(), null);
+          g.drawImage(small[9].getPic(), small[9].getX1(), small[9].getY1(), null);
+          g.drawImage(small[7].getPic(), small[7].getX1(), small[7].getY1(), null);
+          if(gamePause==false && gameOver==false){
+            small[1].changeX();
+            small[7].changeX();
+            small[9].changeX();
+          }
+          if(small[1].getX1()<1200){
+            g.drawImage(small[2].getPic(), small[2].getX1(), small[2].getY1(), null);
+            g.drawImage(small[4].getPic(), small[4].getX1(), small[4].getY1(), null);
+            g.drawImage(small[6].getPic(), small[6].getX1(), small[6].getY1(), null);
+            if(gamePause==false && gameOver==false){
+              small[2].changeX();
+              small[4].changeX();
+              small[6].changeX();
+            }
+            if(small[2].getX1()<1200){
+              alienAnim[1].start();
+              g.drawImage(alienAnim[1].getSprite(), alien[1].getX1(), alien[1].getY1(), null);
+              if(gamePause==false && gameOver==false){
+                alien[1].change();
+              }
+              alienAnim[1].update(); 
+            }
+          }
+        }
+      }
+      animation.start();
+      g.drawImage(animation.getSprite(), spaceshipX, spaceshipY, null);
+      animation.update();
+      g.setFont(new Font("Tahoma", Font.BOLD, 50));
+      g.setColor(Color.WHITE);
+      g.drawString("Waves Completed: "+ Integer.toString(score),scoreX,scoreY);
+      if(alien[1].getX2()<0){
+        wave=0;
+        alien[1].setX(1400);
+        alienAnim[1] = alienMove;
+        small[0].setX(1400);
+        small[1].setX(1400);
+        small[2].setX(1400);
+        small[3].setX(1400);
+        small[4].setX(1400);
+        small[5].setX(1400);
+        small[6].setX(1400);
+        small[7].setX(1400);
+        small[8].setX(1400);
+        small[9].setX(1400);
+        score++;
+      }
+      if(gamePause){
+        g.drawImage(paused, (width/2)-(472/2), height/2-300, null);
+        g.drawImage(continued, (width/2)-(371/2), 300, null);
+        g.drawImage(restart, (width/2)-(319/2), 400, null);
+        g.drawImage(quit, (width/2)-(168/2), 500, null);
+      } else {
+        if(gameOver==false){
+          g.drawImage(pause, width-261, 0, null);
+        }
+      }
+      if(gameOver){
+        g.drawImage(gameover, (width/2)-(697/2), 200, null);
+        g.drawImage(playagain, (width/2)-(487/2), 400, null);
+        g.drawImage(quit, (width/2)-(168/2), 500, null);
+        if(once){
+          text.getHighscore(playerName,score);
+          once = false;
+        }
+      }
+    }//end of Wave 12
+    if(wave==13){
+      int width = getWidth();
+      int height = getHeight();
+      super.paintComponent(g);
+      g.drawImage(background, 0,0,null);
+      g.drawImage(large[1].getPic(), large[1].getX1(), large[1].getY1(), null);
+      if(gamePause==false && gameOver==false){
+        large[1].changeX();
+      }
+      if(large[1].getX1()<950){
+        g.drawImage(huge[1].getPic(), huge[1].getX1(), huge[1].getY1(), null);
+        if(gamePause==false && gameOver==false){
+          huge[1].changeX();
+        }
+      }
+      animation.start();
+      g.drawImage(animation.getSprite(), spaceshipX, spaceshipY, null);
+      animation.update();
+      g.setFont(new Font("Tahoma", Font.BOLD, 50));
+      g.setColor(Color.WHITE);
+      g.drawString("Waves Completed: "+ Integer.toString(score),scoreX,scoreY);
+      if(huge[1].getX2()<0){
+        wave=0;
+        large[1].setX(1400);
+        huge[1].setX(1400);
+        score++;
+      }
+      if(gamePause){
+        g.drawImage(paused, (width/2)-(472/2), height/2-300, null);
+        g.drawImage(continued, (width/2)-(371/2), 300, null);
+        g.drawImage(restart, (width/2)-(319/2), 400, null);
+        g.drawImage(quit, (width/2)-(168/2), 500, null);
+      } else {
+        if(gameOver==false){
+          g.drawImage(pause, width-261, 0, null);
+        }
+      }
+      if(gameOver){
+        g.drawImage(gameover, (width/2)-(697/2), 200, null);
+        g.drawImage(playagain, (width/2)-(487/2), 400, null);
+        g.drawImage(quit, (width/2)-(168/2), 500, null);
+        if(once){
+          text.getHighscore(playerName,score);
+          once = false;
+        }
+      }
+    }//end of Wave 13
+    if(wave==14){
+      int width = getWidth();
+      int height = getHeight();
+      super.paintComponent(g);
+      g.drawImage(background, 0,0,null);
+      
+      gravityUp.start();
+      g.drawImage(gravityUp.getSprite(), gravityU[0].getX1(), gravityU[0].getY1(), null);
+      if(gamePause==false && gameOver==false){
+        gravityU[0].changeX();
+      }
+      g.drawImage(gravityUp.getSprite(), gravityU[1].getX1(), gravityU[1].getY1(), null);
+      if(gamePause==false && gameOver==false){
+        gravityU[1].changeX();
+      }
+      gravityUp.update();
+      if(gravityU[0].getX1()<1350){
+        g.drawImage(small[1].getPic(), small[1].getX1(), small[1].getY1(), null);
+        if(gamePause==false && gameOver==false){
+          small[1].changeX();
+        }
+      }
+      if(gravityU[0].getX1()<1150){
+        g.drawImage(small[2].getPic(), small[2].getX1(), small[2].getY1(), null);
+        if(gamePause==false && gameOver==false){
+          small[2].changeX();
+        }
+      }
+      if(gravityU[0].getX1()<950){
+        g.drawImage(med[4].getPic(), med[4].getX1(), med[4].getY1(), null);
+        g.drawImage(small[3].getPic(), small[3].getX1(), small[3].getY1(), null);
+        if(gamePause==false && gameOver==false){
+          med[4].changeX();
+          small[3].changeX();
+        }
+      }
+      if(gravityU[1].getX1()<1350){
+        g.drawImage(large[0].getPic(), large[0].getX1(), large[0].getY1(), null);
+        if(gamePause==false && gameOver==false){
+          large[0].changeX();
+        }
+      }
+      
+      animation.start();
+      g.drawImage(animation.getSprite(), spaceshipX, spaceshipY, null);
+      animation.update();
+      g.setFont(new Font("Tahoma", Font.BOLD, 50));
+      g.setColor(Color.WHITE);
+      g.drawString("Waves Completed: "+ Integer.toString(score),scoreX,scoreY);
+      if(gravityU[1].getX2()<0){
+        wave=0;
+        gravityU[0].setX(1400);
+        gravityU[1].setX(2200);
+        small[1].setX(1400);
+        small[2].setX(1400);
+        small[3].setX(1400);
+        large[0].setX(1400);
+        med[4].setX(1400);
+        score++;
+      }
+      if(gamePause){
+        g.drawImage(paused, (width/2)-(472/2), height/2-300, null);
+        g.drawImage(continued, (width/2)-(371/2), 300, null);
+        g.drawImage(restart, (width/2)-(319/2), 400, null);
+        g.drawImage(quit, (width/2)-(168/2), 500, null);
+      } else {
+        if(gameOver==false){
+          g.drawImage(pause, width-261, 0, null);
+        }
+      }
+      if(gameOver){
+        g.drawImage(gameover, (width/2)-(697/2), 200, null);
+        g.drawImage(playagain, (width/2)-(487/2), 400, null);
+        g.drawImage(quit, (width/2)-(168/2), 500, null);
+        if(once){
+          text.getHighscore(playerName,score);
+          once = false;
+        }
+      }
+    }//end of Wave 14
+    if(wave==15){
+      int width = getWidth();
+      int height = getHeight();
+      super.paintComponent(g);
+      g.drawImage(background, 0,0,null);
+      
+      g.drawImage(med[0].getPic(), med[0].getX1(), med[0].getY1(), null);
+      if(gamePause==false && gameOver==false){
+        med[0].changeX();
+      }
+      if(med[0].getX1()<1000){
+        g.drawImage(med[3].getPic(), med[3].getX1(), med[3].getY1(), null);
+        if(gamePause==false && gameOver==false){
+          med[3].changeX();
+        }
+        if(med[3].getX1()<1000){
+          g.drawImage(med[1].getPic(), med[1].getX1(), med[1].getY1(), null);
+          if(gamePause==false && gameOver==false){
+            med[1].changeX();
+          }
+          if(med[1].getX1()<1000){
+            g.drawImage(med[2].getPic(), med[2].getX1(), med[2].getY1(), null);
+            g.drawImage(med[4].getPic(), med[4].getX1(), med[4].getY1(), null);
+            if(gamePause==false && gameOver==false){
+              med[2].changeX();
+              med[4].changeX();
+            }
+          }
+        }
+      }
+      animation.start();
+      g.drawImage(animation.getSprite(), spaceshipX, spaceshipY, null);
+      animation.update();
+      g.setFont(new Font("Tahoma", Font.BOLD, 50));
+      g.setColor(Color.WHITE);
+      g.drawString("Waves Completed: "+ Integer.toString(score),scoreX,scoreY);
+      if(med[4].getX2()<0){
+        wave=0;
+        med[0].setX(1400);
+        med[1].setX(1400);
+        med[2].setX(1400);
+        med[3].setX(1400);
+        med[4].setX(1400);
+        score++;
+      }
+      if(gamePause){
+        g.drawImage(paused, (width/2)-(472/2), height/2-300, null);
+        g.drawImage(continued, (width/2)-(371/2), 300, null);
+        g.drawImage(restart, (width/2)-(319/2), 400, null);
+        g.drawImage(quit, (width/2)-(168/2), 500, null);
+      } else {
+        if(gameOver==false){
+          g.drawImage(pause, width-261, 0, null);
+        }
+      }
+      if(gameOver){
+        g.drawImage(gameover, (width/2)-(697/2), 200, null);
+        g.drawImage(playagain, (width/2)-(487/2), 400, null);
+        g.drawImage(quit, (width/2)-(168/2), 500, null);
+        if(once){
+          text.getHighscore(playerName,score);
+          once = false;
+        }
+      }
+    }//end of Wave 15
+    if(wave==16){
+      int width = getWidth();
+      int height = getHeight();
+      super.paintComponent(g);
+      g.drawImage(background, 0,0,null);
+      
+      g.drawImage(large[1].getPic(), large[1].getX1(), large[1].getY1(), null);
+      if(gamePause==false && gameOver==false){
+        large[1].changeX();
+      }
+      if(large[1].getX1()<600){
+        alienAnim[2].start();        
+        g.drawImage(alienAnim[2].getSprite(), alien[2].getX1(), alien[2].getY1(), null);       
+        g.drawImage(med[1].getPic(), med[1].getX1(), med[1].getY1(), null);
+        g.drawImage(small[1].getPic(), small[1].getX1(), small[1].getY1(), null);
+        if(gamePause==false && gameOver==false){
+          med[1].changeX();
+          alien[2].change();
+          small[1].changeX();
+        }
+        alienAnim[2].update(); 
+        if(med[1].getX1()<600){
+          g.drawImage(large[2].getPic(), large[2].getX1(), large[2].getY1(), null);
+          if(gamePause==false && gameOver==false){
+            large[2].changeX();
+          }
+        }
+      }
+      animation.start();
+      g.drawImage(animation.getSprite(), spaceshipX, spaceshipY, null);
+      animation.update();
+      g.setFont(new Font("Tahoma", Font.BOLD, 50));
+      g.setColor(Color.WHITE);
+      g.drawString("Waves Completed: "+ Integer.toString(score),scoreX,scoreY);
+      if(large[2].getX2()<0){
+      wave=0;
+      large[1].setX(1400);
+      med[1].setX(1400);
+      small[1].setX(1400);
+      large[2].setX(1400);
+      alien[2].setX(1400);
+      alienAnim[2] = alienMove;
+      score++;
+      }
+      if(gamePause){
+        g.drawImage(paused, (width/2)-(472/2), height/2-300, null);
+        g.drawImage(continued, (width/2)-(371/2), 300, null);
+        g.drawImage(restart, (width/2)-(319/2), 400, null);
+        g.drawImage(quit, (width/2)-(168/2), 500, null);
+      } else {
+        if(gameOver==false){
+          g.drawImage(pause, width-261, 0, null);
+        }
+      }
+      if(gameOver){
+        g.drawImage(gameover, (width/2)-(697/2), 200, null);
+        g.drawImage(playagain, (width/2)-(487/2), 400, null);
+        g.drawImage(quit, (width/2)-(168/2), 500, null);
+        if(once){
+          text.getHighscore(playerName,score);
+          once = false;
+        }
+      }
+    }//end of Wave 16
+    if(wave==17){
+      int width = getWidth();
+      int height = getHeight();
+      super.paintComponent(g);
+      g.drawImage(background, 0,0,null);
+      g.drawImage(huge[0].getPic(), huge[0].getX1(), huge[0].getY1(), null);
+      if(gamePause==false && gameOver==false){
+        huge[0].changeX();
+      }
+      if(huge[0].getX2()<1259){
+        gravityUp.start();
+        g.drawImage(gravityUp.getSprite(), gravityU[0].getX1(), gravityU[0].getY1(), null);
+        if(gamePause==false && gameOver==false){
+          gravityU[0].changeX();
+        }
+        gravityUp.update();
+        if(gravityU[0].getX1()<1150){
+          g.drawImage(huge[1].getPic(), huge[1].getX1(), huge[1].getY1(), null);
+          if(gamePause==false && gameOver==false){
+            huge[1].changeX();
+          }
+        }
+      }
+      animation.start();
+      g.drawImage(animation.getSprite(), spaceshipX, spaceshipY, null);
+      animation.update();
+      g.setFont(new Font("Tahoma", Font.BOLD, 50));
+      g.setColor(Color.WHITE);
+      g.drawString("Waves Completed: "+ Integer.toString(score),scoreX,scoreY);
+      if(huge[1].getX2()<0){
+        wave=0;
+        huge[0].setX(1400);
+        huge[1].setX(1400);
+        gravityU[0].setX(1400);
+        score++;
+      }
+      if(gamePause){
+        g.drawImage(paused, (width/2)-(472/2), height/2-300, null);
+        g.drawImage(continued, (width/2)-(371/2), 300, null);
+        g.drawImage(restart, (width/2)-(319/2), 400, null);
+        g.drawImage(quit, (width/2)-(168/2), 500, null);
+      } else {
+        if(gameOver==false){
+          g.drawImage(pause, width-261, 0, null);
+        }
+      }
+      if(gameOver){
+        g.drawImage(gameover, (width/2)-(697/2), 200, null);
+        g.drawImage(playagain, (width/2)-(487/2), 400, null);
+        g.drawImage(quit, (width/2)-(168/2), 500, null);
+        if(once){
+          text.getHighscore(playerName,score);
+          once = false;
+        }
+      }
+    }//end of Wave 17
+    if(wave==18){
+      int width = getWidth();
+      int height = getHeight();
+      super.paintComponent(g);
+      g.drawImage(background, 0,0,null);
+      g.drawImage(huge[1].getPic(), huge[1].getX1(), huge[1].getY1(), null);
+      if(gamePause==false && gameOver==false){
+        huge[1].changeX();
+      }
+      if(huge[1].getX2()<1259){
+        gravityDown.start();
+        g.drawImage(gravityDown.getSprite(), gravityD[0].getX1(), gravityD[0].getY1(), null);
+        if(gamePause==false && gameOver==false){
+          gravityD[0].changeX();
+        }
+        gravityDown.update();
+        if(gravityD[0].getX1()<1150){
+          g.drawImage(huge[0].getPic(), huge[0].getX1(), huge[0].getY1(), null);
+          if(gamePause==false && gameOver==false){
+            huge[0].changeX();
+          }
+        }
+      }
+      animation.start();
+      g.drawImage(animation.getSprite(), spaceshipX, spaceshipY, null);
+      animation.update();
+      g.setFont(new Font("Tahoma", Font.BOLD, 50));
+      g.setColor(Color.WHITE);
+      g.drawString("Waves Completed: "+ Integer.toString(score),scoreX,scoreY);
+      if(huge[0].getX2()<0){
+        wave=0;
+        huge[0].setX(1400);
+        huge[1].setX(1400);
+        gravityD[0].setX(1400);
+        score++;
+      }
+      if(gamePause){
+        g.drawImage(paused, (width/2)-(472/2), height/2-300, null);
+        g.drawImage(continued, (width/2)-(371/2), 300, null);
+        g.drawImage(restart, (width/2)-(319/2), 400, null);
+        g.drawImage(quit, (width/2)-(168/2), 500, null);
+      } else {
+        if(gameOver==false){
+          g.drawImage(pause, width-261, 0, null);
+        }
+      }
+      if(gameOver){
+        g.drawImage(gameover, (width/2)-(697/2), 200, null);
+        g.drawImage(playagain, (width/2)-(487/2), 400, null);
+        g.drawImage(quit, (width/2)-(168/2), 500, null);
+        if(once){
+          text.getHighscore(playerName,score);
+          once = false;
+        }
+      }
+    }//end of Wave 18
+    if(wave==19){
+      int width = getWidth();
+      int height = getHeight();
+      super.paintComponent(g);
+      g.drawImage(background, 0,0,null);
+      alienAnim[0].start();
+      alienAnim[1].start();
+      alienAnim[2].start();
+      g.drawImage(alienAnim[0].getSprite(), alien[0].getX1(), alien[0].getY1(), null);
+      g.drawImage(alienAnim[1].getSprite(), alien[1].getX1(), alien[1].getY1(), null);
+      g.drawImage(alienAnim[2].getSprite(), alien[2].getX1(), alien[2].getY1(), null);
+      if(gamePause==false && gameOver==false){
+        alien[0].change();
+        alien[1].change();
+        alien[2].change();
+      }
+      alienAnim[0].update();
+      alienAnim[1].update();
+      alienAnim[2].update();
+      animation.start();
+      g.drawImage(animation.getSprite(), spaceshipX, spaceshipY, null);
+      animation.update();
+      g.setFont(new Font("Tahoma", Font.BOLD, 50));
+      g.setColor(Color.WHITE);
+      g.drawString("Waves Completed: "+ Integer.toString(score),scoreX,scoreY);
+      if(alien[2].getX2()<0){
+        wave=0;
+        alien[0].setX(1400);
+        alien[1].setX(1400);
+        alien[2].setX(1400);
+        alienAnim[0] = alienMove;
+        alienAnim[1] = alienMove;
+        alienAnim[2] = alienMove;
+        score++;
+      }
+      if(gamePause){
+        g.drawImage(paused, (width/2)-(472/2), height/2-300, null);
+        g.drawImage(continued, (width/2)-(371/2), 300, null);
+        g.drawImage(restart, (width/2)-(319/2), 400, null);
+        g.drawImage(quit, (width/2)-(168/2), 500, null);
+      } else {
+        if(gameOver==false){
+          g.drawImage(pause, width-261, 0, null);
+        }
+      }
+      if(gameOver){
+        g.drawImage(gameover, (width/2)-(697/2), 200, null);
+        g.drawImage(playagain, (width/2)-(487/2), 400, null);
+        g.drawImage(quit, (width/2)-(168/2), 500, null);
+        if(once){
+          text.getHighscore(playerName,score);
+          once = false;
+        }
+      }
+    }//end of Wave 19
+    if(wave==20){
+      int width = getWidth();
+      int height = getHeight();
+      super.paintComponent(g);
+      g.drawImage(background, 0,0,null);
+      g.drawImage(large[0].getPic(), large[0].getX1(), large[0].getY1(), null);
+      g.drawImage(med[4].getPic(), med[4].getX1(), med[4].getY1(), null);
+      if(gamePause==false && gameOver==false){
+        large[0].changeX();
+        med[4].changeX();
+      }
+      if(med[4].getX2()<1160){
+        alienAnim[1].start();
+        g.drawImage(alienAnim[1].getSprite(), alien[1].getX1(), alien[1].getY1(), null);
+        if(gamePause==false && gameOver==false){
+          alien[1].change();
+        }
+        alienAnim[1].update();
+      }
+      if(large[0].getX2()<1000){
+        g.drawImage(large[1].getPic(), large[1].getX1(), large[1].getY1(), null);
+        if(gamePause==false && gameOver==false){
+          large[1].changeX();
+        }
+        if(large[1].getX2()<1400){
+          g.drawImage(small[8].getPic(), small[8].getX1(), small[8].getY1(), null);
+          g.drawImage(small[9].getPic(), small[9].getX1(), small[9].getY1(), null);
+          if(gamePause==false && gameOver==false){
+            small[8].changeX();
+            small[9].changeX();
+          }
+        }
+      }   
+      animation.start();
+      g.drawImage(animation.getSprite(), spaceshipX, spaceshipY, null);
+      animation.update();
+      g.setFont(new Font("Tahoma", Font.BOLD, 50));
+      g.setColor(Color.WHITE);
+      g.drawString("Waves Completed: "+ Integer.toString(score),scoreX,scoreY);
+      if(small[9].getX2()<0){
+      wave=0;
+      large[0].setX(1400);
+      med[4].setX(1400);
+      large[1].setX(1400);
+      small[8].setX(1400);
+      small[9].setX(1400);
+      alien[1].setX(1400);
+      alienAnim[1] = alienMove;
+      score++;
+      }
+      if(gamePause){
+        g.drawImage(paused, (width/2)-(472/2), height/2-300, null);
+        g.drawImage(continued, (width/2)-(371/2), 300, null);
+        g.drawImage(restart, (width/2)-(319/2), 400, null);
+        g.drawImage(quit, (width/2)-(168/2), 500, null);
+      } else {
+        if(gameOver==false){
+          g.drawImage(pause, width-261, 0, null);
+        }
+      }
+      if(gameOver){
+        g.drawImage(gameover, (width/2)-(697/2), 200, null);
+        g.drawImage(playagain, (width/2)-(487/2), 400, null);
+        g.drawImage(quit, (width/2)-(168/2), 500, null);
+        if(once){
+          text.getHighscore(playerName,score);
+          once = false;
+        }
+      }
+    }//end of Wave 20
+    if(wave==21){
+      int width = getWidth();
+      int height = getHeight();
+      super.paintComponent(g);
+      g.drawImage(background, 0,0,null);
+      g.drawImage(large[0].getPic(), large[0].getX1(), large[0].getY1(), null);
+      g.drawImage(med[4].getPic(), med[4].getX1(), med[4].getY1(), null);
+      if(gamePause==false && gameOver==false){
+        large[0].changeX();
+        med[4].changeX();
+      }
+      if(med[4].getX2()<1160){
+        alienAnim[1].start();
+        g.drawImage(alienAnim[1].getSprite(), alien[1].getX1(), alien[1].getY1(), null);
+        if(gamePause==false && gameOver==false){
+          alien[1].change();
+        }
+        alienAnim[1].update();
+      }
+      if(large[0].getX2()<1000){
+        g.drawImage(large[1].getPic(), large[1].getX1(), large[1].getY1(), null);
+        if(gamePause==false && gameOver==false){
+          large[1].changeX();
+        }
+        if(large[1].getX2()<1400){
+          g.drawImage(small[0].getPic(), small[0].getX1(), small[0].getY1(), null);
+          g.drawImage(small[1].getPic(), small[1].getX1(), small[1].getY1(), null);
+          if(gamePause==false && gameOver==false){
+            small[0].changeX();
+            small[1].changeX();
+          }
+        }
+      }  
+      animation.start();
+      g.drawImage(animation.getSprite(), spaceshipX, spaceshipY, null);
+      animation.update();
+      g.setFont(new Font("Tahoma", Font.BOLD, 50));
+      g.setColor(Color.WHITE);
+      g.drawString("Waves Completed: "+ Integer.toString(score),scoreX,scoreY);
+      if(small[1].getX2()<0){
+      wave=0;
+      large[0].setX(1400);
+      med[4].setX(1400);
+      large[1].setX(1400);
+      small[0].setX(1400);
+      small[1].setX(1400);
+      alien[1].setX(1400);
+      alienAnim[1] = alienMove;
+      score++;
+      }
+      if(gamePause){
+        g.drawImage(paused, (width/2)-(472/2), height/2-300, null);
+        g.drawImage(continued, (width/2)-(371/2), 300, null);
+        g.drawImage(restart, (width/2)-(319/2), 400, null);
+        g.drawImage(quit, (width/2)-(168/2), 500, null);
+      } else {
+        if(gameOver==false){
+          g.drawImage(pause, width-261, 0, null);
+        }
+      }
+      if(gameOver){
+        g.drawImage(gameover, (width/2)-(697/2), 200, null);
+        g.drawImage(playagain, (width/2)-(487/2), 400, null);
+        g.drawImage(quit, (width/2)-(168/2), 500, null);
+        if(once){
+          text.getHighscore(playerName,score);
+          once = false;
+        }
+      }
+    }//end of Wave 21
+    if(wave==22){
+      int width = getWidth();
+      int height = getHeight();
+      super.paintComponent(g);
+      g.drawImage(background, 0,0,null);
+      gravityDown.start();
+      g.drawImage(gravityDown.getSprite(), gravityD[0].getX1(), gravityD[0].getY1(), null);
+      if(gamePause==false && gameOver==false){
+        gravityD[0].changeX();
+      }
+      gravityUp.start();
+      g.drawImage(gravityUp.getSprite(), gravityU[1].getX1(), gravityU[1].getY1(), null);
+      if(gamePause==false && gameOver==false){
+        gravityU[1].changeX();
+      }
+      gravityDown.update();
+      gravityUp.update();
+      if(gravityD[0].getX1()<1350){
+        alienAnim[0].start();
+        g.drawImage(alienAnim[0].getSprite(), alien[0].getX1(), alien[0].getY1(), null);
+        if(gamePause==false && gameOver==false){
+          alien[0].change();
+        }
+        alienAnim[0].update();
+      }
+      if(gravityD[0].getX1()<1200){
+        g.drawImage(large[2].getPic(), large[2].getX1(), large[2].getY1(), null);
+        if(gamePause==false && gameOver==false){
+          large[2].changeX();
+        }
+      }
+      if(gravityU[1].getX2()<1259){
+        g.drawImage(med[0].getPic(), med[0].getX1(), med[0].getY1(), null);
+        g.drawImage(med[1].getPic(), med[1].getX1(), med[1].getY1(), null);
+        g.drawImage(med[3].getPic(), med[3].getX1(), med[3].getY1(), null);
+        g.drawImage(med[4].getPic(), med[4].getX1(), med[4].getY1(), null);
+        if(gamePause==false && gameOver==false){
+          med[0].changeX();
+          med[1].changeX();
+          med[3].changeX();
+          med[4].changeX();
+        }
+      }
+      animation.start();
+      g.drawImage(animation.getSprite(), spaceshipX, spaceshipY, null);
+      animation.update();
+      g.setFont(new Font("Tahoma", Font.BOLD, 50));
+      g.setColor(Color.WHITE);
+      g.drawString("Waves Completed: "+ Integer.toString(score),scoreX,scoreY);
+      if(med[4].getX2()<0){
+        wave=0;
+        gravityD[0].setX(1400);
+        gravityU[1].setX(2200);
+        alien[0].setX(1400);
+        alienAnim[0] = alienMove;
+        large[2].setX(1400);
+        med[0].setX(1400);
+        med[1].setX(1400);
+        med[3].setX(1400);
+        med[4].setX(1400);
+        score++;
+      }
+      if(gamePause){
+        g.drawImage(paused, (width/2)-(472/2), height/2-300, null);
+        g.drawImage(continued, (width/2)-(371/2), 300, null);
+        g.drawImage(restart, (width/2)-(319/2), 400, null);
+        g.drawImage(quit, (width/2)-(168/2), 500, null);
+      } else {
+        if(gameOver==false){
+          g.drawImage(pause, width-261, 0, null);
+        }
+      }
+      if(gameOver){
+        g.drawImage(gameover, (width/2)-(697/2), 200, null);
+        g.drawImage(playagain, (width/2)-(487/2), 400, null);
+        g.drawImage(quit, (width/2)-(168/2), 500, null);
+        if(once){
+          text.getHighscore(playerName,score);
+          once = false;
+        }
+      }
+    }//end of Wave 22
+    if(wave==23){
+      int width = getWidth();
+      int height = getHeight();
+      super.paintComponent(g);
+      g.drawImage(background, 0,0,null);    
+      gravityUp.start();
+      g.drawImage(gravityUp.getSprite(), gravityU[0].getX1(), gravityU[0].getY1(), null);
+      if(gamePause==false && gameOver==false){
+        gravityU[0].changeX();
+      }
+      gravityDown.start();
+      g.drawImage(gravityDown.getSprite(), gravityD[1].getX1(), gravityD[1].getY1(), null);
+      if(gamePause==false && gameOver==false){
+        gravityD[1].changeX();
+      }      
+      gravityUp.update();
+      gravityDown.update();
+      if(gravityU[0].getX1()<1350){
+        alienAnim[2].start();
+        g.drawImage(alienAnim[2].getSprite(), alien[2].getX1(), alien[2].getY1(), null);
+        if(gamePause==false && gameOver==false){
+          alien[2].change();
+        }
+        alienAnim[2].update();
+      }
+      if(gravityU[0].getX1()<1200){
+        g.drawImage(small[1].getPic(), small[1].getX1(), small[1].getY1(), null);
+        if(gamePause==false && gameOver==false){
+          small[1].changeX();
+        }
+      }
+      if(gravityU[0].getX1()<1100){
+        g.drawImage(small[6].getPic(), small[6].getX1(), small[6].getY1(), null);
+        if(gamePause==false && gameOver==false){
+          small[6].changeX();
+        }
+      }
+      if(gravityD[1].getX1()<1350){
+        alienAnim[0].start();
+        g.drawImage(alienAnim[0].getSprite(), alien[0].getX1(), alien[0].getY1(), null);
+        if(gamePause==false && gameOver==false){
+          alien[0].change();
+        }
+        alienAnim[0].update();
+      }
+      if(gravityD[1].getX1()<1200){
+        g.drawImage(small[3].getPic(), small[3].getX1(), small[3].getY1(), null);
+        if(gamePause==false && gameOver==false){
+          small[3].changeX();
+        }
+      }
+      if(gravityD[1].getX1()<1100){
+        g.drawImage(small[9].getPic(), small[9].getX1(), small[9].getY1(), null);
+        if(gamePause==false && gameOver==false){
+          small[9].changeX();
+        }
+      }
+      
+      animation.start();
+      g.drawImage(animation.getSprite(), spaceshipX, spaceshipY, null);
+      animation.update();
+      g.setFont(new Font("Tahoma", Font.BOLD, 50));
+      g.setColor(Color.WHITE);
+      g.drawString("Waves Completed: "+ Integer.toString(score),scoreX,scoreY);
+      if(gravityD[1].getX2()<0){
+        wave=0;
+        gravityU[0].setX(1400);
+        gravityD[1].setX(2200);
+        alien[0].setX(1400);
+        alienAnim[0] = alienMove;
+        alien[2].setX(1400);
+        alienAnim[2] = alienMove;
+        small[1].setX(1400);
+        small[6].setX(1400);
+        small[3].setX(1400);
+        small[9].setX(1400);
+        score++;
+      }
+      if(gamePause){
+        g.drawImage(paused, (width/2)-(472/2), height/2-300, null);
+        g.drawImage(continued, (width/2)-(371/2), 300, null);
+        g.drawImage(restart, (width/2)-(319/2), 400, null);
+        g.drawImage(quit, (width/2)-(168/2), 500, null);
+      } else {
+        if(gameOver==false){
+          g.drawImage(pause, width-261, 0, null);
+        }
+      }
+      if(gameOver){
+        g.drawImage(gameover, (width/2)-(697/2), 200, null);
+        g.drawImage(playagain, (width/2)-(487/2), 400, null);
+        g.drawImage(quit, (width/2)-(168/2), 500, null);
+        if(once){
+          text.getHighscore(playerName,score);
+          once = false;
+        }
+      }
+    }//end of Wave 23
+    if(wave==24){
+      int width = getWidth();
+      int height = getHeight();
+      super.paintComponent(g);
+      g.drawImage(background, 0,0,null);
+      gravityUp.start();
+      g.drawImage(gravityUp.getSprite(), gravityU[0].getX1(),  gravityU[0].getY1(), null);
+      if(gamePause==false && gameOver==false){
+        gravityU[0].changeX();
+      }
+      g.drawImage(gravityUp.getSprite(), gravityU[1].getX1(),  gravityU[1].getY1(), null);
+      if(gamePause==false && gameOver==false){
+        gravityU[1].changeX();
+      }
+      gravityUp.update();
+      if(gravityU[0].getX1()<1300){
+        g.drawImage(small[0].getPic(), small[0].getX1(), small[0].getY1(), null);
+        if(gamePause==false && gameOver==false){
+          small[0].changeX();
+        }
+        if(small[0].getX2()<1400){
+          g.drawImage(med[0].getPic(), med[0].getX1(), med[0].getY1(), null);
+          if(gamePause==false && gameOver==false){
+            med[0].changeX();
+          }
+          if(med[0].getX2()<1400){
+            g.drawImage(large[0].getPic(), large[0].getX1(), large[0].getY1(), null);
+            if(gamePause==false && gameOver==false){
+              large[0].changeX();
+            }
+            if(large[0].getX2()<1400){
+              g.drawImage(huge[0].getPic(), huge[0].getX1(), huge[0].getY1(), null);
+              if(gamePause==false && gameOver==false){
+                huge[0].changeX();
+              }
+            }
+          }
+        }
+      }
+      animation.start();
+      g.drawImage(animation.getSprite(), spaceshipX, spaceshipY, null);
+      animation.update();
+      g.setFont(new Font("Tahoma", Font.BOLD, 50));
+      g.setColor(Color.WHITE);
+      g.drawString("Waves Completed: "+ Integer.toString(score),scoreX,scoreY);
+      if(huge[0].getX2()<0){
+        wave=0;
+        gravityU[0].setX(1400);
+        gravityU[1].setX(2200);
+        small[0].setX(1400);
+        med[0].setX(1400);
+        large[0].setX(1400);
+        huge[0].setX(1400);
+        score++;
+      }
+      if(gamePause){
+        g.drawImage(paused, (width/2)-(472/2), height/2-300, null);
+        g.drawImage(continued, (width/2)-(371/2), 300, null);
+        g.drawImage(restart, (width/2)-(319/2), 400, null);
+        g.drawImage(quit, (width/2)-(168/2), 500, null);
+      } else {
+        if(gameOver==false){
+          g.drawImage(pause, width-261, 0, null);
+        }
+      }
+      if(gameOver){
+        g.drawImage(gameover, (width/2)-(697/2), 200, null);
+        g.drawImage(playagain, (width/2)-(487/2), 400, null);
+        g.drawImage(quit, (width/2)-(168/2), 500, null);
+        if(once){
+          text.getHighscore(playerName,score);
+          once = false;
+        }
+      }
+    }//end of Wave 24
+    if(wave==25){
+      int width = getWidth();
+      int height = getHeight();
+      super.paintComponent(g);
+      g.drawImage(background, 0,0,null);
+      
+      g.drawImage(small[0].getPic(), small[0].getX1(), small[0].getY1(), null);
+      g.drawImage(small[1].getPic(), small[1].getX1(), small[1].getY1(), null);
+      g.drawImage(small[2].getPic(), small[2].getX1(), small[2].getY1(), null);
+      g.drawImage(small[3].getPic(), small[3].getX1(), small[3].getY1(), null);
+      g.drawImage(small[4].getPic(), small[4].getX1(), small[4].getY1(), null);
+      g.drawImage(small[6].getPic(), small[6].getX1(), small[6].getY1(), null);
+      g.drawImage(small[7].getPic(), small[7].getX1(), small[7].getY1(), null);
+      g.drawImage(small[8].getPic(), small[8].getX1(), small[8].getY1(), null);
+      g.drawImage(small[9].getPic(), small[9].getX1(), small[9].getY1(), null); 
+      if(gamePause==false && gameOver==false){
+        small[0].changeX();
+        small[1].changeX();
+        small[2].changeX();
+        small[3].changeX();
+        small[4].changeX();
+        small[6].changeX();
+        small[7].changeX();
+        small[8].changeX();
+        small[9].changeX();
+      }
+      if(small[9].getX2()<1300){
+        g.drawImage(med[0].getPic(), med[0].getX1(), med[0].getY1(), null); 
+        g.drawImage(med[1].getPic(), med[1].getX1(), med[1].getY1(), null); 
+        g.drawImage(med[3].getPic(), med[3].getX1(), med[3].getY1(), null); 
+        g.drawImage(med[4].getPic(), med[4].getX1(), med[4].getY1(), null);  
+        if(gamePause==false && gameOver==false){
+          med[0].changeX();
+          med[1].changeX();
+          med[3].changeX();
+          med[4].changeX();
+        }
+        if(med[4].getX2()<1100){
+          alienAnim[0].start();
+          g.drawImage(alienAnim[0].getSprite(), alien[0].getX1(), alien[0].getY1(), null);
+          g.drawImage(large[1].getPic(), large[1].getX1(), large[1].getY1(), null);
+          if(gamePause==false && gameOver==false){
+            large[1].changeX();
+            alien[0].change();
+          }
+          alienAnim[0].update();
+        }
+      }
+      animation.start();
+      g.drawImage(animation.getSprite(), spaceshipX, spaceshipY, null);
+      animation.update();
+      g.setFont(new Font("Tahoma", Font.BOLD, 50));
+      g.setColor(Color.WHITE);
+      g.drawString("Waves Completed: "+ Integer.toString(score),scoreX,scoreY);
+      if(large[1].getX2()<0){
+        wave=0;
+        small[0].setX(1400);
+        small[1].setX(1400);
+        small[2].setX(1400);
+        small[3].setX(1400);
+        small[4].setX(1400);
+        small[6].setX(1400);
+        small[7].setX(1400);
+        small[8].setX(1400);
+        small[9].setX(1400);
+        med[0].setX(1400);
+        med[1].setX(1400);
+        med[3].setX(1400);
+        med[4].setX(1400);
+        alien[0].setX(1400);
+        alienAnim[0] = alienMove;
+        large[1].setX(1400);
+        score++;
+      }
+      if(gamePause){
+        g.drawImage(paused, (width/2)-(472/2), height/2-300, null);
+        g.drawImage(continued, (width/2)-(371/2), 300, null);
+        g.drawImage(restart, (width/2)-(319/2), 400, null);
+        g.drawImage(quit, (width/2)-(168/2), 500, null);
+      } else {
+        if(gameOver==false){
+          g.drawImage(pause, width-261, 0, null);
+        }
+      }
+      if(gameOver){
+        g.drawImage(gameover, (width/2)-(697/2), 200, null);
+        g.drawImage(playagain, (width/2)-(487/2), 400, null);
+        g.drawImage(quit, (width/2)-(168/2), 500, null);
+        if(once){
+          text.getHighscore(playerName,score);
+          once = false;
+        }
+      }
+    }//end of Wave 25
+  }//end of PaintComponet method
+}//end of SurvivalMode class
